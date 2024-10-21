@@ -35,7 +35,7 @@ static void LocalHandler() {
 #endif
 
 static void SignalHandler(
-    int /* signum */, siginfo_t * /* siginfo */, void *context) {
+    int /* signum */, siginfo_t * siginfo,void *context) {
   // On IA32, X64 and PPC moves the instruction pointer to the
   // "afterspeculation" label. On ARM64 moves the instruction pointer to the
   // "LocalHandler" label.
@@ -47,7 +47,10 @@ static void SignalHandler(
   ucontext->uc_mcontext.gregs[REG_RIP] =
       reinterpret_cast<greg_t>(afterspeculation);
 #elif SAFESIDE_LINUX && SAFESIDE_ARM64
+  size_t *ptr = (size_t *)siginfo->si_ptr;
+  // *ptr+=3;
   ucontext->uc_mcontext.pc = reinterpret_cast<greg_t>(LocalHandler);
+  
 #elif SAFESIDE_LINUX && SAFESIDE_PPC
   ucontext->uc_mcontext.regs->nip =
       reinterpret_cast<uintptr_t>(afterspeculation);
@@ -67,10 +70,13 @@ static void SignalHandler(
 // to LocalHandler function why we must treat ARM differently.
 static void OnSignalMoveRipToAfterspeculation(int signal) {
   struct sigaction act;
+  
   memset(&act, 0, sizeof(struct sigaction));
   act.sa_sigaction = SignalHandler;
   act.sa_flags = SA_SIGINFO;
   sigaction(signal, &act, nullptr);
+  
+
 }
 
 #endif  // DEMOS_MELTDOWN_LOCAL_CONTENT_H_

@@ -11,6 +11,7 @@
 #include <linux/proc_fs.h>
 #include <linux/slab.h>
 #include <linux/uaccess.h>
+#include <asm/cpufeature.h>
 
 MODULE_LICENSE("Dual BSD/GPL");
 MODULE_AUTHOR("Google");
@@ -37,7 +38,8 @@ static ssize_t address_store(struct file *f, const char __user *buf,
   int res;
   int *kernel_memory;
   // Enable kernel access to userspace memory.
-  __uaccess_enable(ARM64_ALT_PAN_NOT_UAO);
+  // __uaccess_enable(ARM64_ALT_PAN_NOT_UAO);
+  __uaccess_enable_hw_pan;
   res = kstrtoul(buf, 0, &userspace_address);
 
   if (res != 0) {
@@ -81,12 +83,13 @@ static ssize_t address_store(struct file *f, const char __user *buf,
 
   kfree(kernel_memory);
   // Disable kernel access to userspace memory.
-  __uaccess_disable(ARM64_ALT_PAN_NOT_UAO);
+  // __uaccess_disable(ARM64_ALT_PAN_NOT_UAO);
+  __uaccess_disable_hw_pan;
   return length;
 }
 
-static struct file_operations address_file_ops = {
-  write: address_store
+static struct proc_ops address_file_ops = {
+  proc_write: address_store
 };
 
 static int __init eret_hvc_smc_init(void) {

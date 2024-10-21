@@ -1,0 +1,1 @@
+savedcmd_/home/navneet/safeside/my_kern_mod/new_ker_mod.mod := printf '%s\n'   new_ker_mod.o | awk '!x[$$0]++ { print("/home/navneet/safeside/my_kern_mod/"$$0) }' > /home/navneet/safeside/my_kern_mod/new_ker_mod.mod

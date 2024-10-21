@@ -70,10 +70,28 @@ int main() {
       }
     }
   } else {
+    // std::ifstream in("/sys/kernel/debug/safeside_meltdown/secret_data_address");
+    // if (in.fail()) {
+    //   std::cerr << "Meltdown module not loaded or not running as root."
+    //             << std::endl;
+    //   exit(EXIT_FAILURE);
+    // }
+
+    // in >> std::hex >> private_data;
+    // in.close();
+    
+    // std::cout << "Address of private_data in kernel module: " << std::hex << private_data << std::endl;
+    // in.open("/sys/kernel/debug/safeside_meltdown/secret_data_length");
+    // in >> std::dec >> private_length;
+    // in.close();
+    // std::cout << "Length of private_data in kernel module: " << std::hex << private_length << std::endl;
+
+  
     // The parent (victim) calls only LeakByte and ReturnTrue, never
     // ReturnFalse.
     std::cout << "Leaking the string: ";
     std::cout.flush();
+
     for (size_t i = 0; i < strlen(private_data); ++i) {
       current_offset = i;
       std::cout << Ret2specLeakByte();

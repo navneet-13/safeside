@@ -1,0 +1,1 @@
+savedcmd_/home/navneet/safeside/my_kern_mod/Module.symvers :=  scripts/mod/modpost -M -m     -N  -o /home/navneet/safeside/my_kern_mod/Module.symvers -n -T /home/navneet/safeside/my_kern_mod/modules.order -i Module.symvers -e 

@@ -38,9 +38,9 @@ bool ReturnsFalse(int counter) {
     if (ReturnsFalse(counter - 1)) {
       // Unreachable code. ReturnsFalse can never return true.
       const std::array<BigByte, 256> &oracle = *oracle_ptr;
-      ForceRead(oracle.data() +
-                static_cast<unsigned char>(private_data[current_offset]));
-      std::cout << "Dead code. Must not be printed." << std::endl;
+      // std::cout << "Dead code. Must not be printed." << std::endl;
+      ForceRead(oracle.data() + static_cast<unsigned char>(private_data[current_offset]));
+      
       exit(EXIT_FAILURE);
     }
   } else {
