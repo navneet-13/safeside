@@ -1,23 +1,22 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
-#include <string.h>
-#include <unistd.h>
-#include <cstring>
-#include <iostream>
 
+#include <unistd.h>
+
+
+#include<string.h>
 #include <signal.h>
 #include <sys/syscall.h>
 #include <sys/types.h>
 #include <unistd.h>
 
-#include <fstream>
+
 #include <sys/mman.h>
-#include <fcntl.h>
-#include <cstring>
-#include <cstdlib>
-#include <cerrno>
-#include <ctime>
+// #include <fcntl.h>
+
+// #include <cstdlib>
+
 
 
 // #include "cache_sidechannel.h"
@@ -39,7 +38,7 @@ void modify_value_handler(int signum, siginfo_t *info, void *context) {
         printf("Signal received. Modified value: %d\n", *ptr);
     }
     else
-        printf("Recieved NULL pointer\n");
+        printf("Signal received. Recieved NULL pointer\n");
 }
 
 int main() {
@@ -62,22 +61,33 @@ int main() {
     // Prepare the pointer to be passed via the signal
     sig_data.sival_ptr = &shared_value;
 
-    Send the signal with data (pointer) using sigqueue
-    if (sigqueue(getpid(), SIGUSR1, sig_data) < 0) {
-        perror("sigqueue failed");
-        exit(1);
-    }
+    //  siginfo_t sig_data_struct = {.si_signo = SIGUSR1, .si_code = SI_QUEUE, .si_pid = getpid(), .si_uid = getuid(), .si_value = sig_data};
+    siginfo_t sig_data_struct;
+    memset(&sig_data_struct, 0, sizeof(siginfo_t));  // Clear the structure
 
-    // asm volatile(
-    //     "mov x8, %0\n"           // System call number for rt_sigqueueinfo
-    //     "mov x0, %1\n"           // Process ID (getpid)
-    //     "mov x1, %2\n"           // Signal number (SIGUSR1)
-    //     "mov x2, %3\n"           // Pointer to sigval (value)
-    //     "svc #0\n"               // Make the system call
-    //     // :
-    //     : "r"(__NR_kill), "r"(getpid()), "r"(SIGUSR1), "r"(&sig_data)
-    //     : "x0", "x1", "x2", "x8"
-    // );
+    sig_data_struct.si_signo = SIGUSR1;     // Signal number
+    sig_data_struct.si_code = SI_QUEUE;     // Code indicating it was sent via sigqueue
+    sig_data_struct.si_pid = getpid();      // Sending process ID
+    sig_data_struct.si_uid = getuid();      // Sending user ID
+    sig_data_struct.si_value = sig_data;    // Value passed via sigqueue (union sigval)
+
+    // Send the signal with data (pointer) using sigqueue
+    // if (sigqueue(getpid(), SIGUSR1, sig_data) < 0) {
+    //     perror("sigqueue failed");
+    //     exit(1);
+    // }
+    // printf("Original value: %d\n", shared_value);
+
+
+    asm volatile(
+        "mov x8, %0\n"           // System call number for rt_sigqueueinfo
+        "mov x0, %1\n"           // Process ID (getpid)
+        "mov x1, %2\n"           // Signal number (SIGUSR1)
+        "mov x2, %3\n"           // Pointer to sigval (value)
+        "svc #0\n"               // Make the system call
+        :: "r"(__NR_rt_sigqueueinfo), "r"(getpid()), "r"(SIGUSR1), "r"(&sig_data_struct) : "x0", "x1", "x2", "x8"
+        // 
+    );
 
     printf("Final value: %d\n", shared_value);
 
