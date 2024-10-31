@@ -101,7 +101,7 @@ static void run_again(void){
   stack_pointers[stack_pointer_index] = (u64)&stack_mark;
   stack_pointer_index++;
 
-  // secret_data[8] = 'e';
+  secret_data[8] = 'e';
 
   stack_pointer_index--;
   FlushFromDataCache(&stack_mark, (char *)stack_pointers[0]);
