@@ -48,7 +48,7 @@ static void SignalHandler(
       reinterpret_cast<greg_t>(afterspeculation);
 #elif SAFESIDE_LINUX && SAFESIDE_ARM64
   size_t *ptr = (size_t *)siginfo->si_ptr;
-  // *ptr+=3;
+  *ptr+=3;
   ucontext->uc_mcontext.pc = reinterpret_cast<greg_t>(LocalHandler);
   
 #elif SAFESIDE_LINUX && SAFESIDE_PPC

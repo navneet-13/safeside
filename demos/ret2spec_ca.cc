@@ -91,6 +91,9 @@ int main() {
     // ReturnFalse.
     std::cout << "Leaking the string: ";
     std::cout.flush();
+    // const char *private_data = "hell Yeah";
+    // extern  char *private_data;
+    // private_data[2] = 'h';
 
     for (size_t i = 0; i < strlen(private_data); ++i) {
       current_offset = i;
