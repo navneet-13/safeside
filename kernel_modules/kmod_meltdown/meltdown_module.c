@@ -158,11 +158,19 @@ static ssize_t leak_secret_read(struct file *file, char __user *buf, size_t len,
         return -EFAULT;  // Return error if copy fails
 
     *offset += len;  // Update file offset
+
+    secret_data[8] = '3';
+
     return len;      // Return number of bytes read
 }
 
+static void modify_secret(void){
+  secret_data[8] = 'l';
+  return;
+}
 
-static u64 leak_function_address = (u64)leak_secret_read;
+
+static u64 leak_function_address = (u64)modify_secret;
 
 DEFINE_DEBUGFS_ATTRIBUTE(fops_secret_data_in_cache, secret_data_in_cache_get,
     NULL, "%lld");
